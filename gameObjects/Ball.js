@@ -15,11 +15,16 @@
 		this.height = Settings.BALL_H;
 		this.regX = this.width / 2;
 		this.regY = this.height / 2;
+		this.color = Settings.BALL_COLOR || '#FFF';
 		this.y = paddle.y - paddle.height/2;
 		this.x = paddle.x;
 
 		this.velocityX = (Math.random() * Settings.BALL_VELOCITY) - Settings.BALL_VELOCITY / 2;
 		this.velocityY = - Settings.BALL_VELOCITY;
+
+		this.shape = new createjs.Shape();
+		this.gfx = this.shape.graphics;
+		this.addChild(this.shape);
 
 		this.render();
 
@@ -27,27 +32,36 @@
 
 	proto.render = function() {
 
-		const rect = new createjs.Shape();
-		rect.graphics.beginFill(Settings.BALL_COLOR).drawRect(0,0,this.width,this.height);
-		this.addChild(rect);
+		this.gfx.clear().beginFill(this.color).drawRect(0,0,this.width,this.height);
+	}
 
+	proto.update = function() {
+
+		this.render();
+		this.move();
 	}
 
 	proto.move = function() {
-		
+	
+		if( Settings.EFFECT_BALL_ROTATION) {
+			var rotation = Math.atan2(this.velocityY, this.velocityX) / Math.PI * 180;			
+			this.rotation = rotation;
+		} else {
+			this.rotation = 0;
+		}
 
 
 		if( this.y <= Settings.BORDER_W + this.height / 2) {
-			this.velocityY *= -1;
+			this.collide(1,-1);
 		}
 		if( this.x >= Stage.canvas.width - Settings.BORDER_W - this.width / 2) {
-			this.velocityX *= -1;
+			this.collide(-1,1);
 		}
 		if( this.x <= Settings.BORDER_W + this.width / 2) {
-			this.velocityX *= -1;
+			this.collide(-1,1);
 		}
 		if( this.y >= Stage.canvas.height - Settings.BORDER_W - this.height / 2) {
-			this.velocityY *= -1;
+			this.collide(1,-1);
 		}
 
 
@@ -99,7 +113,19 @@
 		this.velocityX *= multiplierX;
 		this.velocityY *= multiplierY;
 
+
+		if(Settings.EFFECT_BALL_COLLIDE_SCALE) {
+			createjs.Tween.get(this).to({scaleX: 4, scaleY: 4}, 50, createjs.Ease.quartIn)
+				.to({scaleX: 1, scaleY: 1}, 100, createjs.Ease.quartOut)
+		}
+
+		if(Settings.EFFECT_BALL_COLLIDE_COLOR) {
+			this.color = '#FFF';
+			createjs.Tween.get(this).to({alpha: 0.8},50).to({alpha: 1},100).call(function() { this.color = Settings.BALL_COLOR });
+		}
 		//console.log('colliding '+ direction + ' this block :', block);
+		//
+		createjs.Sound.play("ball_wall");
 
 	}
 
